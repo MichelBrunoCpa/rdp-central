@@ -1,5 +1,5 @@
 {
-  "name": "Projeto RDP Michel Bruno",
+  "name": "Central de RDPs",
   "description": "Um painel centralizado para gerenciar e iniciar conexões de Área de Trabalho Remota (RDP).",
   "requestFramePermissions": []
 }
