@@ -526,7 +526,7 @@ export default function App() {
 [HKEY_CLASSES_ROOT\\rdp\\shell]
 [HKEY_CLASSES_ROOT\\rdp\\shell\\open]
 [HKEY_CLASSES_ROOT\\rdp\\shell\\open\\command]
-@="powershell.exe -WindowStyle Hidden -Command \\"$url = '%1'; $address = $url -replace 'rdp://', ''; mstsc.exe /v:$address\\""
+@="powershell.exe -WindowStyle Hidden -Command \\"$url = '%1'; $address = ($url -replace 'rdp://', '').TrimEnd('/'); mstsc.exe /v:$address\\""
 `;
     const blob = new Blob([regContent], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
@@ -890,7 +890,8 @@ export default function App() {
       // 2. Agora disparar o RDP conforme o método escolhido
       if (appSettings.connectionMethod === 'direct') {
         // MODO DIRETO (mstsc.exe): Usa o protocolo rdp:// (Requer o arquivo .reg aplicado)
-        const protocolUrl = `rdp://${fullAddress}`;
+        // Removemos qualquer barra final que o navegador possa tentar adicionar
+        const protocolUrl = `rdp://${fullAddress}`.replace(/\/$/, '');
         const link = document.createElement('a');
         link.href = protocolUrl;
         document.body.appendChild(link);
