@@ -384,6 +384,7 @@ export default function App() {
       accentColor: 'blue',
       autoLockTimeout: 0,
       confirmDelete: true,
+      connectionMethod: 'download', // 'download' or 'protocol'
       performanceProfile: 'Equilibrado',
       userName: 'Michel Bruno',
       userRole: 'ADMINISTRADOR'
@@ -848,24 +849,51 @@ export default function App() {
     ].filter(line => line !== '').join('\r\n');
 
     try {
-      // Criar blob com codificação UTF-8 e disparar download
-      // O download é o método mais confiável para o Windows MSTSC
-      const blob = new Blob([rdpContent], { type: 'application/x-rdp;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const safeName = conn.name.replace(/[^a-z0-9]/gi, '_');
-      link.download = `${safeName}.rdp`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      await fetch(`/api/connections/${conn.id}/connect`, { method: 'POST' });
+      // 1. Primeiro atualizamos o banco de dados e registramos a atividade
+      // Fazemos isso antes de disparar o RDP para evitar que o navegador cancele o fetch
+      await Promise.all([
+        fetch(`/api/connections/${conn.id}/connect`, { method: 'POST' }),
+        fetch('/api/activities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'connection', 
+            description: `Iniciou conexão com: ${conn.name}`, 
+            details: `IP: ${fullAddress}` 
+          })
+        })
+      ]).catch(err => console.warn('Aviso: Falha ao registrar log, mas prosseguindo com conexão:', err));
+
       fetchConnections();
-      logActivity('connection', `Iniciou conexão com: ${conn.name}`, `IP: ${fullAddress}`);
+      fetchActivities();
+
+      // 2. Agora disparar o RDP
+      if (appSettings.connectionMethod === 'protocol') {
+        // Método via Protocolo URL (rdp://)
+        const protocolUrl = `rdp://full%20address=s:${fullAddress}${conn.username ? `&username=s:${conn.username}` : ''}`;
+        const link = document.createElement('a');
+        link.href = protocolUrl;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          if (document.body.contains(link)) document.body.removeChild(link);
+        }, 100);
+      } else {
+        // Método padrão: Download de arquivo .rdp
+        const blob = new Blob([rdpContent], { type: 'application/x-rdp;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const safeName = conn.name.replace(/[^a-z0-9]/gi, '_');
+        link.download = `${safeName}.rdp`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
     } catch (err) {
-      console.error('Failed to connect or update status', err);
+      console.error('Failed to connect', err);
     } finally {
       setTimeout(() => setConnectingId(null), 2000);
     }
@@ -1926,6 +1954,22 @@ export default function App() {
                           placeholder="Ex: Administrador" 
                           className={`w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`} 
                         />
+                      </div>
+                      <div className="space-y-1">
+                        <label className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Método de Conexão</label>
+                        <select 
+                          value={appSettings.connectionMethod}
+                          onChange={(e) => setAppSettings(prev => ({ ...prev, connectionMethod: e.target.value as 'download' | 'protocol' }))}
+                          className={`w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`}
+                        >
+                          <option value="download">Download de Arquivo (.rdp)</option>
+                          <option value="protocol">Protocolo Direto (rdp://)</option>
+                        </select>
+                        <p className={`text-[10px] mt-1 ${appSettings.darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {appSettings.connectionMethod === 'protocol' 
+                            ? 'Requer um "RDP Protocol Handler" instalado no Windows.' 
+                            : 'Gera um arquivo temporário para cada conexão.'}
+                        </p>
                       </div>
                       <div className="space-y-1">
                         <label className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Perfil de Performance</label>
