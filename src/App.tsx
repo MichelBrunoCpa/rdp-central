@@ -384,7 +384,7 @@ export default function App() {
       accentColor: 'blue',
       autoLockTimeout: 0,
       confirmDelete: true,
-      connectionMethod: 'ms-rd', // Default to modern instant mode
+      connectionMethod: 'ms-rd', // 'download', 'ms-rd', 'direct'
       performanceProfile: 'Equilibrado',
       userName: 'Michel Bruno',
       userRole: 'ADMINISTRADOR'
@@ -514,6 +514,27 @@ export default function App() {
     } catch (err) {
       console.error('Failed to log activity', err);
     }
+  };
+
+  const downloadRegFile = () => {
+    const regContent = `Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\\rdp]
+@="URL:Remote Desktop Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\\rdp\\shell]
+[HKEY_CLASSES_ROOT\\rdp\\shell\\open]
+[HKEY_CLASSES_ROOT\\rdp\\shell\\open\\command]
+@="powershell.exe -WindowStyle Hidden -Command \\"$url = '%1'; $address = $url -replace 'rdp://', ''; mstsc.exe /v:$address\\""
+`;
+    const blob = new Blob([regContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'ativar_rdp_direto.reg';
+    link.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -867,15 +888,18 @@ export default function App() {
       fetchActivities();
 
       // 2. Agora disparar o RDP conforme o método escolhido
-      if (appSettings.connectionMethod === 'ms-rd') {
-        // MODO INSTANTÂNEO: Usa o protocolo moderno da Microsoft (Sem Downloads!)
+      if (appSettings.connectionMethod === 'direct') {
+        // MODO DIRETO (mstsc.exe): Usa o protocolo rdp:// (Requer o arquivo .reg aplicado)
+        const protocolUrl = `rdp://${fullAddress}`;
+        const link = document.createElement('a');
+        link.href = protocolUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else if (appSettings.connectionMethod === 'ms-rd') {
+        // MODO APP MODERNO: Usa o protocolo ms-rd:
         const msRdUrl = `ms-rd:connect?fulladdress=s:${fullAddress}${conn.username ? `&username=s:${conn.username}` : ''}`;
         window.location.href = msRdUrl;
-      } else if (appSettings.connectionMethod === 'copy') {
-        // MODO COPIAR: Apenas copia o comando
-        const command = `mstsc /v:${fullAddress}${conn.username ? ` /u:${conn.username}` : ''}`;
-        await navigator.clipboard.writeText(command);
-        alert(`Comando copiado! Pressione Win+R e cole.`);
       } else {
         // MODO COMPATIBILIDADE: Download de arquivo .rdp
         const blob = new Blob([rdpContent], { type: 'application/x-rdp;charset=utf-8' });
@@ -1959,22 +1983,34 @@ export default function App() {
                           onChange={(e) => setAppSettings(prev => ({ ...prev, connectionMethod: e.target.value as any }))}
                           className={`w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`}
                         >
-                          <option value="ms-rd">🚀 Modo Instantâneo (Sem Downloads)</option>
-                          <option value="download">📂 Modo Compatibilidade (Download .rdp)</option>
-                          <option value="copy">📋 Apenas Copiar Comando</option>
+                          <option value="direct">⚡ Conexão Direta (mstsc.exe)</option>
+                          <option value="ms-rd">🚀 App Moderno (Sem Downloads)</option>
+                          <option value="download">📂 Modo Compatibilidade (Download)</option>
                         </select>
                         <div className={`mt-2 p-3 rounded-lg text-[10px] leading-relaxed border ${appSettings.darkMode ? 'bg-blue-900/10 border-blue-800/50 text-blue-300' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
+                          {appSettings.connectionMethod === 'direct' && (
+                            <div className="space-y-2">
+                              <p className="font-bold">Para funcionar sem baixar arquivos:</p>
+                              <p>1. Clique no botão abaixo para baixar o ativador.</p>
+                              <p>2. Execute o arquivo <b>ativar_rdp_direto.reg</b> e aceite as mensagens do Windows.</p>
+                              <button 
+                                onClick={downloadRegFile}
+                                className="mt-1 px-3 py-1.5 bg-blue-600 text-white rounded-md font-bold hover:bg-blue-700 transition-colors flex items-center gap-2"
+                              >
+                                <Download size={12} /> Baixar Ativador (.reg)
+                              </button>
+                            </div>
+                          )}
                           {appSettings.connectionMethod === 'ms-rd' && (
                             <div className="space-y-1">
-                              <p className="font-bold">Como funciona o Modo Instantâneo:</p>
-                              <p>• Não baixa arquivos. Abre o app de RDP do Windows direto.</p>
-                              <p>• Requer o app "Área de Trabalho Remota" da Microsoft Store (Gratuito).</p>
+                              <p className="font-bold">Como funciona:</p>
+                              <p>• Abre o app 'Área de Trabalho Remota' da Microsoft Store.</p>
                             </div>
                           )}
                           {appSettings.connectionMethod === 'download' && (
                             <div className="space-y-1">
-                              <p className="font-bold">Dica para não ver o download:</p>
-                              <p>• No próximo download, clique com o botão direito no arquivo e marque <b>"Sempre abrir arquivos deste tipo"</b>. O Windows passará a abrir sozinho sem salvar na pasta!</p>
+                              <p className="font-bold">Dica:</p>
+                              <p>• Clique com o botão direito no arquivo baixado e marque "Sempre abrir arquivos deste tipo".</p>
                             </div>
                           )}
                         </div>
