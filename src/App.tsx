@@ -443,6 +443,21 @@ export default function App() {
     }
   }, [appSettings.masterPassword]);
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('A imagem deve ter menos de 2MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAppSettings(prev => ({ ...prev, loginLogoUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -1237,7 +1252,7 @@ export default function App() {
                 <img 
                   src={appSettings.loginLogoUrl} 
                   alt="Logo" 
-                  className="h-24 w-auto object-contain drop-shadow-xl"
+                  className="h-28 w-auto object-contain drop-shadow-2xl"
                   referrerPolicy="no-referrer"
                 />
               ) : (
@@ -1301,11 +1316,11 @@ export default function App() {
         <div className={`h-16 flex items-center px-6 border-b ${appSettings.darkMode ? 'border-gray-800' : 'border-white/10'}`}>
           <div className={`flex items-center gap-3 overflow-hidden ${!sidebarOpen ? 'mx-auto' : ''}`}>
             {appSettings.loginLogoUrl ? (
-              <div className="w-8 h-8 rounded flex items-center justify-center shrink-0 overflow-hidden bg-white/10">
+              <div className="w-10 h-10 rounded flex items-center justify-center shrink-0 overflow-hidden">
                 <img 
                   src={appSettings.loginLogoUrl} 
                   alt="Logo" 
-                  className="w-full h-full object-contain p-0.5"
+                  className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
                 />
               </div>
@@ -2162,19 +2177,36 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                      <div className="space-y-1">
-                        <label className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>URL da Logo (Login)</label>
-                        <div className="relative">
-                          <input 
-                            type="text" 
-                            value={appSettings.loginLogoUrl}
-                            onChange={(e) => setAppSettings(prev => ({ ...prev, loginLogoUrl: e.target.value }))}
-                            placeholder="https://exemplo.com/logo.png" 
-                            className={`w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`} 
-                          />
-                          <ExternalLink size={16} className="absolute right-3 top-2.5 text-gray-300" />
+                      <div className="space-y-2">
+                        <label className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Logo do Sistema (Login)</label>
+                        <div className="flex items-center gap-4">
+                          <div className={`w-16 h-16 rounded-lg border-2 border-dashed flex items-center justify-center overflow-hidden ${appSettings.darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'}`}>
+                            {appSettings.loginLogoUrl ? (
+                              <img src={appSettings.loginLogoUrl} alt="Preview" className="w-full h-full object-contain p-1" />
+                            ) : (
+                              <Shield size={24} className="text-gray-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <div className="flex gap-2">
+                              <label className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${appSettings.darkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}>
+                                <Upload size={14} />
+                                Escolher Arquivo
+                                <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                              </label>
+                              {appSettings.loginLogoUrl && (
+                                <button 
+                                  onClick={() => setAppSettings(prev => ({ ...prev, loginLogoUrl: '' }))}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${appSettings.darkMode ? 'bg-red-900/20 text-red-400 hover:bg-red-900/30' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                                >
+                                  <Trash2 size={14} />
+                                  Remover
+                                </button>
+                              )}
+                            </div>
+                            <p className={`text-[10px] ${appSettings.darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Recomendado: PNG ou JPG transparente, máx 2MB.</p>
+                          </div>
                         </div>
-                        <p className={`text-[10px] ${appSettings.darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Insira o link da imagem para substituir o ícone de escudo na tela de login.</p>
                       </div>
                     </div>
                   </motion.div>
