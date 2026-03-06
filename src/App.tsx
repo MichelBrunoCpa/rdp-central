@@ -207,16 +207,6 @@ const SortableItem = ({
           <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${appSettings.darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
             {conn.group_name}
           </span>
-          <div className="flex items-center gap-1 ml-auto">
-            <span className="text-[10px] font-mono text-gray-500">{appSettings.maskData ? '•••.•••.•••.•••' : conn.host}</span>
-            <button 
-              onClick={(e) => { e.stopPropagation(); copyToClipboard(conn.host, conn.id); }}
-              className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ${copySuccess === conn.id ? 'text-green-500' : 'text-gray-400'}`}
-              title="Copiar IP"
-            >
-              {copySuccess === conn.id ? <Check size={10} /> : <Copy size={10} />}
-            </button>
-          </div>
         </div>
 
         <button 
@@ -1324,10 +1314,10 @@ export default function App() {
         animate={{ width: sidebarOpen ? 240 : 80 }}
         className={`flex flex-col z-30 transition-colors duration-300 ${appSettings.darkMode ? 'bg-gray-900 border-r border-gray-800' : 'bg-[#001529] text-white'}`}
       >
-        <div className={`h-16 flex items-center px-6 border-b ${appSettings.darkMode ? 'border-gray-800' : 'border-white/10'}`}>
-          <div className={`flex items-center gap-3 overflow-hidden ${!sidebarOpen ? 'mx-auto' : ''}`}>
+        <div className={`h-16 flex items-center border-b transition-all duration-300 ${sidebarOpen ? 'px-6' : 'px-0 justify-center'} ${appSettings.darkMode ? 'border-gray-800' : 'border-white/10'}`}>
+          <div className={`flex items-center gap-3 overflow-hidden`}>
             {appSettings.loginLogoUrl ? (
-              <div className="w-10 h-10 rounded flex items-center justify-center shrink-0 overflow-hidden">
+              <div className={`${sidebarOpen ? 'w-10 h-10' : 'w-12 h-12'} rounded flex items-center justify-center shrink-0 overflow-hidden transition-all duration-300`}>
                 <img 
                   src={appSettings.loginLogoUrl} 
                   alt="Logo" 
@@ -1550,15 +1540,7 @@ export default function App() {
                                         <div className="flex-1 min-w-0">
                                           <p className={`font-semibold line-clamp-2 leading-tight ${appSettings.darkMode ? 'text-white' : 'text-gray-900'} ${getAdaptiveFontSize(conn.name)}`}>{conn.name}</p>
                                           <div className="flex items-center gap-2 mt-0.5">
-                                            <p className="text-[10px] text-gray-400 font-mono">{appSettings.maskData ? '•••.•••.•••.•••' : conn.host}</p>
-                                            <button 
-                                              onClick={(e) => { e.stopPropagation(); copyToClipboard(conn.host, conn.id); }}
-                                              className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ${copySuccess === conn.id ? 'text-green-500' : 'text-gray-400'}`}
-                                              title="Copiar IP"
-                                            >
-                                              {copySuccess === conn.id ? <Check size={10} /> : <Copy size={10} />}
-                                            </button>
-                                            {conn.last_connected && <><span className="text-gray-300 text-[10px]">•</span><span className="text-[10px] text-gray-400">{new Date(conn.last_connected).toLocaleDateString('pt-BR')}</span></>}
+                                            {conn.last_connected && <span className="text-[10px] text-gray-400">{new Date(conn.last_connected).toLocaleDateString('pt-BR')}</span>}
                                           </div>
                                         </div>
                                         <button onClick={() => handleConnect(conn)} className={`p-2 rounded-lg transition-all ${appSettings.darkMode ? 'text-blue-400 hover:bg-blue-900/20' : 'text-blue-600 hover:bg-blue-50'}`}><ExternalLink size={16} /></button>
@@ -1587,15 +1569,6 @@ export default function App() {
                                   <div key={conn.id} className="p-4 flex items-center justify-between group">
                                     <div className="flex-1 min-w-0">
                                       <p className={`text-xs font-bold truncate ${appSettings.darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{conn.name}</p>
-                                      <div className="flex items-center gap-1">
-                                        <p className="text-[10px] text-gray-400 font-mono">{appSettings.maskData ? '•••.•••.•••.•••' : conn.host}</p>
-                                        <button 
-                                          onClick={(e) => { e.stopPropagation(); copyToClipboard(conn.host, conn.id); }}
-                                          className={`p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ${copySuccess === conn.id ? 'text-green-500' : 'text-gray-400'}`}
-                                        >
-                                          {copySuccess === conn.id ? <Check size={8} /> : <Copy size={8} />}
-                                        </button>
-                                      </div>
                                     </div>
                                     <button onClick={() => handleConnect(conn)} className={`p-2 rounded-lg transition-all ${appSettings.darkMode ? 'text-blue-400 hover:bg-blue-900/20' : 'text-blue-600 hover:bg-blue-50'}`}><ExternalLink size={14} /></button>
                                   </div>
