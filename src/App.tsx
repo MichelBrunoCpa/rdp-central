@@ -358,35 +358,60 @@ export default function App() {
   const [chartFilter, setChartFilter] = useState<'year' | 'month' | 'week'>('year');
   const [activeId, setActiveId] = useState<number | null>(null);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-  const [appSettings, setAppSettings] = useState(() => {
-    const saved = localStorage.getItem('rdp_central_settings');
-    const defaultSettings = {
-      darkMode: false,
-      density: 'Confortável',
-      language: 'Português (BR)',
-      defaultPort: 3389,
-      defaultUser: '',
-      resolution: 'Tela Cheia',
-      maskData: false,
-      masterUsername: 'admin',
-      masterPassword: '',
-      serverStatus: 'Saudável',
-      dashboardStatsOrder: ['total', 'today', 'activity', 'groups'],
-      dashboardWidgetsOrder: ['chart', 'recent', 'favorites', 'groupUsage'],
-      accentColor: 'blue',
-      autoLockTimeout: 0,
-      confirmDelete: true,
-      connectionMethod: 'ms-rd', // 'download', 'ms-rd', 'direct'
-      performanceProfile: 'Equilibrado',
-      userName: 'Michel Bruno',
-      userRole: 'ADMINISTRADOR',
-      loginLogoUrl: ''
-    };
-    if (!saved) return defaultSettings;
-    const parsed = JSON.parse(saved);
-    return { ...defaultSettings, ...parsed };
+  const [appSettings, setAppSettings] = useState({
+    darkMode: false,
+    density: 'Confortável',
+    language: 'Português (BR)',
+    defaultPort: 3389,
+    defaultUser: '',
+    resolution: 'Tela Cheia',
+    maskData: false,
+    masterUsername: 'admin',
+    masterPassword: '',
+    serverStatus: 'Saudável',
+    dashboardStatsOrder: ['total', 'today', 'activity', 'groups'],
+    dashboardWidgetsOrder: ['chart', 'recent', 'favorites', 'groupUsage'],
+    accentColor: 'blue',
+    autoLockTimeout: 0,
+    confirmDelete: true,
+    connectionMethod: 'ms-rd', // 'download', 'ms-rd', 'direct'
+    performanceProfile: 'Equilibrado',
+    userName: 'Michel Bruno',
+    userRole: 'ADMINISTRADOR',
+    loginLogoUrl: ''
   });
+
+  // Fetch settings from server
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const data = await res.json();
+        if (data) {
+          setAppSettings(prev => ({ ...prev, ...data }));
+        }
+      }
+      setSettingsLoaded(true);
+    } catch (err) {
+      console.error('Failed to fetch settings', err);
+      setSettingsLoaded(true); // Still set to true to allow app to load with defaults
+    }
+  };
+
+  // Save settings to server
+  const saveSettingsToServer = async (newSettings: any) => {
+    try {
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings)
+      });
+    } catch (err) {
+      console.error('Failed to save settings to server', err);
+    }
+  };
 
   // Auto-Lock Logic
   useEffect(() => {
@@ -419,19 +444,21 @@ export default function App() {
   }, [isUnlocked, appSettings.autoLockTimeout]);
 
   useEffect(() => {
-    localStorage.setItem('rdp_central_settings', JSON.stringify(appSettings));
+    if (settingsLoaded) {
+      saveSettingsToServer(appSettings);
+    }
     if (appSettings.darkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [appSettings]);
+  }, [appSettings, settingsLoaded]);
 
   useEffect(() => {
-    if (!appSettings.masterPassword) {
+    if (settingsLoaded && !appSettings.masterPassword) {
       setIsUnlocked(true);
     }
-  }, [appSettings.masterPassword]);
+  }, [appSettings.masterPassword, settingsLoaded]);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -478,6 +505,7 @@ export default function App() {
   });
 
   useEffect(() => {
+    fetchSettings();
     fetchConnections();
     fetchActivities();
   }, []);
@@ -670,7 +698,6 @@ export default function App() {
     try {
       const res = await fetch('/api/connections/reset', { method: 'POST' });
       if (res.ok) {
-        localStorage.removeItem('rdp_central_settings');
         setAppSettings({
           darkMode: false,
           density: 'Confortável',
@@ -679,9 +706,19 @@ export default function App() {
           defaultUser: '',
           resolution: 'Tela Cheia',
           maskData: false,
+          masterUsername: 'admin',
           masterPassword: '',
           serverStatus: 'Saudável',
-          version: '1.2.0'
+          dashboardStatsOrder: ['total', 'today', 'activity', 'groups'],
+          dashboardWidgetsOrder: ['chart', 'recent', 'favorites', 'groupUsage'],
+          accentColor: 'blue',
+          autoLockTimeout: 0,
+          confirmDelete: true,
+          connectionMethod: 'ms-rd', // 'download', 'ms-rd', 'direct'
+          performanceProfile: 'Equilibrado',
+          userName: 'Michel Bruno',
+          userRole: 'ADMINISTRADOR',
+          loginLogoUrl: ''
         });
         await fetchConnections();
         alert('Todos os dados e configurações foram apagados.');
@@ -742,7 +779,6 @@ export default function App() {
       const newOrder = arrayMove(appSettings.dashboardStatsOrder, oldIndex, newIndex);
       const newSettings = { ...appSettings, dashboardStatsOrder: newOrder };
       setAppSettings(newSettings);
-      localStorage.setItem('rdp_central_settings', JSON.stringify(newSettings));
     }
   };
 
@@ -754,7 +790,6 @@ export default function App() {
       const newOrder = arrayMove(appSettings.dashboardWidgetsOrder, oldIndex, newIndex);
       const newSettings = { ...appSettings, dashboardWidgetsOrder: newOrder };
       setAppSettings(newSettings);
-      localStorage.setItem('rdp_central_settings', JSON.stringify(newSettings));
     }
   };
 
@@ -1223,6 +1258,17 @@ export default function App() {
       handleDelete(id);
     }
   };
+
+  if (!settingsLoaded) {
+    return (
+      <div className="h-screen w-screen bg-gray-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+          <p className="text-blue-400 font-bold animate-pulse">Carregando configurações...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex h-screen overflow-hidden font-sans transition-colors duration-300 ${appSettings.darkMode ? 'bg-gray-950 text-gray-100' : 'bg-[#F0F2F5] text-gray-900'}`}>

@@ -49,6 +49,13 @@ async function initDb() {
       )
     `);
 
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        data TEXT NOT NULL
+      )
+    `);
+
     // Migrations: Add columns if they don't exist
     // Note: PRAGMA table_info might behave differently on remote LibSQL
     // We'll use a more robust check or just try/catch the ALTER TABLE
@@ -213,6 +220,34 @@ async function startServer() {
     } catch (err) {
       console.error('Create activity failed', err);
       res.status(500).json({ error: "Falha ao registrar atividade" });
+    }
+  });
+
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const result = await db.execute("SELECT data FROM settings WHERE id = 1");
+      if (result.rows.length > 0) {
+        res.json(JSON.parse(result.rows[0].data as string));
+      } else {
+        res.json(null);
+      }
+    } catch (err) {
+      console.error('Fetch settings failed', err);
+      res.status(500).json({ error: "Falha ao buscar configurações" });
+    }
+  });
+
+  app.put("/api/settings", async (req, res) => {
+    try {
+      const data = JSON.stringify(req.body);
+      await db.execute({
+        sql: "INSERT OR REPLACE INTO settings (id, data) VALUES (1, ?)",
+        args: [data]
+      });
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Update settings failed', err);
+      res.status(500).json({ error: "Falha ao atualizar configurações" });
     }
   });
 
