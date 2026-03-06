@@ -455,10 +455,15 @@ export default function App() {
   }, [appSettings, settingsLoaded]);
 
   useEffect(() => {
-    if (settingsLoaded && !appSettings.masterPassword) {
-      setIsUnlocked(true);
+    if (settingsLoaded) {
+      if (!appSettings.masterPassword) {
+        setIsUnlocked(true);
+      }
+      if (appSettings.masterUsername) {
+        setUsernameInput(appSettings.masterUsername);
+      }
     }
-  }, [appSettings.masterPassword, settingsLoaded]);
+  }, [appSettings.masterPassword, appSettings.masterUsername, settingsLoaded]);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1313,7 +1318,7 @@ export default function App() {
                 <div className="relative">
                   <input 
                     type="text"
-                    autoFocus
+                    autoFocus={!usernameInput}
                     value={usernameInput}
                     onChange={(e) => setUsernameInput(e.target.value)}
                     placeholder="Usuário"
@@ -1324,6 +1329,7 @@ export default function App() {
                 <div className="relative">
                   <input 
                     type="password"
+                    autoFocus={!!usernameInput}
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     placeholder="Senha"
