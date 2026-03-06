@@ -15,6 +15,7 @@ import {
   X,
   Menu,
   User,
+  Lock,
   ChevronDown,
   BarChart3,
   Activity,
@@ -362,6 +363,7 @@ export default function App() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
+  const [usernameInput, setUsernameInput] = useState('');
   const [connectingId, setConnectingId] = useState<number | null>(null);
   const [chartFilter, setChartFilter] = useState<'year' | 'month' | 'week'>('year');
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -377,6 +379,7 @@ export default function App() {
       defaultUser: '',
       resolution: 'Tela Cheia',
       maskData: false,
+      masterUsername: 'admin',
       masterPassword: '',
       serverStatus: 'Saudável',
       dashboardStatsOrder: ['total', 'today', 'activity', 'groups'],
@@ -387,7 +390,8 @@ export default function App() {
       connectionMethod: 'ms-rd', // 'download', 'ms-rd', 'direct'
       performanceProfile: 'Equilibrado',
       userName: 'Michel Bruno',
-      userRole: 'ADMINISTRADOR'
+      userRole: 'ADMINISTRADOR',
+      loginLogoUrl: ''
     };
     if (!saved) return defaultSettings;
     const parsed = JSON.parse(saved);
@@ -1224,34 +1228,64 @@ export default function App() {
             animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-8 text-center shadow-2xl"
           >
-            <div className={`w-16 h-16 ${accent.dark.light} ${accent.dark.text} rounded-2xl flex items-center justify-center mx-auto mb-6`}>
-              <Shield size={32} />
+            <div className="mb-6">
+              <h1 className="text-blue-500 font-black text-xl tracking-tighter">S.O.S INFORMÁTICA E IMPRESSORAS</h1>
+              <p className="text-blue-400/60 text-[10px] uppercase tracking-[0.3em] font-bold">Serviços Gerenciados</p>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Sistema Bloqueado</h2>
-            <p className="text-gray-400 text-sm mb-8">Insira sua senha mestra para acessar o painel Central de RDPs.</p>
+            <div className="flex justify-center mb-6">
+              {appSettings.loginLogoUrl ? (
+                <img 
+                  src={appSettings.loginLogoUrl} 
+                  alt="Logo" 
+                  className="h-24 w-auto object-contain drop-shadow-xl"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className={`w-16 h-16 ${accent.dark.light} ${accent.dark.text} rounded-2xl flex items-center justify-center mx-auto`}>
+                  <Shield size={32} />
+                </div>
+              )}
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
+            <p className="text-gray-400 text-sm mb-8">Identifique-se para acessar o painel de Serviços Gerenciados.</p>
             
             <form onSubmit={(e) => {
               e.preventDefault();
-              if (passwordInput === appSettings.masterPassword) {
+              if (usernameInput === appSettings.masterUsername && passwordInput === appSettings.masterPassword) {
                 setIsUnlocked(true);
               } else {
-                alert('Senha incorreta!');
+                alert('Usuário ou senha incorretos!');
                 setPasswordInput('');
               }
             }} className="space-y-4">
-              <input 
-                type="password"
-                autoFocus
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Sua senha mestra"
-                className={`w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-center outline-none focus:border-${appSettings.accentColor}-500 transition-colors`}
-              />
+              <div className="space-y-4">
+                <div className="relative">
+                  <input 
+                    type="text"
+                    autoFocus
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    placeholder="Usuário"
+                    className={`w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-${appSettings.accentColor}-500 transition-colors pl-11`}
+                  />
+                  <User size={18} className="absolute left-4 top-3.5 text-gray-500" />
+                </div>
+                <div className="relative">
+                  <input 
+                    type="password"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    placeholder="Senha"
+                    className={`w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-${appSettings.accentColor}-500 transition-colors pl-11`}
+                  />
+                  <Lock size={18} className="absolute left-4 top-3.5 text-gray-500" />
+                </div>
+              </div>
               <button 
                 type="submit"
-                className={`w-full ${accent.bg} ${accent.hover} text-white font-bold py-3 rounded-xl transition-all shadow-lg`}
+                className={`w-full ${accent.bg} ${accent.hover} text-white font-bold py-3 rounded-xl transition-all shadow-lg mt-4`}
               >
-                Desbloquear
+                Entrar no Sistema
               </button>
             </form>
           </motion.div>
@@ -1266,11 +1300,25 @@ export default function App() {
       >
         <div className={`h-16 flex items-center px-6 border-b ${appSettings.darkMode ? 'border-gray-800' : 'border-white/10'}`}>
           <div className={`flex items-center gap-3 overflow-hidden ${!sidebarOpen ? 'mx-auto' : ''}`}>
-            <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center shrink-0">
-              <Monitor size={20} />
-            </div>
+            {appSettings.loginLogoUrl ? (
+              <div className="w-8 h-8 rounded flex items-center justify-center shrink-0 overflow-hidden bg-white/10">
+                <img 
+                  src={appSettings.loginLogoUrl} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain p-0.5"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            ) : (
+              <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center shrink-0">
+                <Monitor size={20} />
+              </div>
+            )}
             {sidebarOpen && (
-              <span className="font-bold text-lg tracking-tight text-white whitespace-nowrap">Central de RDPs</span>
+              <div className="flex flex-col">
+                <span className="font-black text-[10px] tracking-tighter text-white leading-none">S.O.S INFORMÁTICA</span>
+                <span className="text-[8px] text-blue-400 font-bold uppercase tracking-widest leading-none mt-0.5">Serviços Gerenciados</span>
+              </div>
             )}
           </div>
         </div>
@@ -2086,18 +2134,47 @@ export default function App() {
                           <option value={60}>1 hora</option>
                         </select>
                       </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Usuário Mestre</label>
+                          <div className="relative">
+                            <input 
+                              type="text" 
+                              value={appSettings.masterUsername}
+                              onChange={(e) => setAppSettings(prev => ({ ...prev, masterUsername: e.target.value }))}
+                              placeholder="Usuário de acesso" 
+                              className={`w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`} 
+                            />
+                            <User size={16} className="absolute right-3 top-2.5 text-gray-300" />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <label className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Senha Mestra</label>
+                          <div className="relative">
+                            <input 
+                              type="password" 
+                              value={appSettings.masterPassword}
+                              onChange={(e) => setAppSettings(prev => ({ ...prev, masterPassword: e.target.value }))}
+                              placeholder="Senha de acesso" 
+                              className={`w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-amber-500 ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`} 
+                            />
+                            <ShieldCheck size={16} className="absolute right-3 top-2.5 text-gray-300" />
+                          </div>
+                        </div>
+                      </div>
                       <div className="space-y-1">
-                        <label className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Senha Mestra</label>
+                        <label className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>URL da Logo (Login)</label>
                         <div className="relative">
                           <input 
-                            type="password" 
-                            value={appSettings.masterPassword}
-                            onChange={(e) => setAppSettings(prev => ({ ...prev, masterPassword: e.target.value }))}
-                            placeholder="Definir senha de acesso" 
-                            className={`w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-amber-500 ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`} 
+                            type="text" 
+                            value={appSettings.loginLogoUrl}
+                            onChange={(e) => setAppSettings(prev => ({ ...prev, loginLogoUrl: e.target.value }))}
+                            placeholder="https://exemplo.com/logo.png" 
+                            className={`w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`} 
                           />
-                          <ShieldCheck size={16} className="absolute right-3 top-2.5 text-gray-300" />
+                          <ExternalLink size={16} className="absolute right-3 top-2.5 text-gray-300" />
                         </div>
+                        <p className={`text-[10px] ${appSettings.darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Insira o link da imagem para substituir o ícone de escudo na tela de login.</p>
                       </div>
                     </div>
                   </motion.div>
