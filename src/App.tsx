@@ -384,7 +384,7 @@ export default function App() {
       accentColor: 'blue',
       autoLockTimeout: 0,
       confirmDelete: true,
-      connectionMethod: 'download', // 'download' or 'protocol'
+      connectionMethod: 'ms-rd', // Default to modern instant mode
       performanceProfile: 'Equilibrado',
       userName: 'Michel Bruno',
       userRole: 'ADMINISTRADOR'
@@ -850,7 +850,6 @@ export default function App() {
 
     try {
       // 1. Primeiro atualizamos o banco de dados e registramos a atividade
-      // Fazemos isso antes de disparar o RDP para evitar que o navegador cancele o fetch
       await Promise.all([
         fetch(`/api/connections/${conn.id}/connect`, { method: 'POST' }),
         fetch('/api/activities', {
@@ -859,28 +858,26 @@ export default function App() {
           body: JSON.stringify({ 
             type: 'connection', 
             description: `Iniciou conexão com: ${conn.name}`, 
-            details: `IP: ${fullAddress}` 
+            details: `IP: ${fullAddress} (Método: ${appSettings.connectionMethod})` 
           })
         })
-      ]).catch(err => console.warn('Aviso: Falha ao registrar log, mas prosseguindo com conexão:', err));
+      ]).catch(err => console.warn('Aviso: Falha ao registrar log:', err));
 
       fetchConnections();
       fetchActivities();
 
-      // 2. Agora disparar o RDP
-      if (appSettings.connectionMethod === 'protocol') {
-        // Método via Protocolo URL (rdp://)
-        const protocolUrl = `rdp://full%20address=s:${fullAddress}${conn.username ? `&username=s:${conn.username}` : ''}`;
-        const link = document.createElement('a');
-        link.href = protocolUrl;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          if (document.body.contains(link)) document.body.removeChild(link);
-        }, 100);
+      // 2. Agora disparar o RDP conforme o método escolhido
+      if (appSettings.connectionMethod === 'ms-rd') {
+        // MODO INSTANTÂNEO: Usa o protocolo moderno da Microsoft (Sem Downloads!)
+        const msRdUrl = `ms-rd:connect?fulladdress=s:${fullAddress}${conn.username ? `&username=s:${conn.username}` : ''}`;
+        window.location.href = msRdUrl;
+      } else if (appSettings.connectionMethod === 'copy') {
+        // MODO COPIAR: Apenas copia o comando
+        const command = `mstsc /v:${fullAddress}${conn.username ? ` /u:${conn.username}` : ''}`;
+        await navigator.clipboard.writeText(command);
+        alert(`Comando copiado! Pressione Win+R e cole.`);
       } else {
-        // Método padrão: Download de arquivo .rdp
+        // MODO COMPATIBILIDADE: Download de arquivo .rdp
         const blob = new Blob([rdpContent], { type: 'application/x-rdp;charset=utf-8' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -1959,17 +1956,28 @@ export default function App() {
                         <label className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Método de Conexão</label>
                         <select 
                           value={appSettings.connectionMethod}
-                          onChange={(e) => setAppSettings(prev => ({ ...prev, connectionMethod: e.target.value as 'download' | 'protocol' }))}
+                          onChange={(e) => setAppSettings(prev => ({ ...prev, connectionMethod: e.target.value as any }))}
                           className={`w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`}
                         >
-                          <option value="download">Download de Arquivo (.rdp)</option>
-                          <option value="protocol">Protocolo Direto (rdp://)</option>
+                          <option value="ms-rd">🚀 Modo Instantâneo (Sem Downloads)</option>
+                          <option value="download">📂 Modo Compatibilidade (Download .rdp)</option>
+                          <option value="copy">📋 Apenas Copiar Comando</option>
                         </select>
-                        <p className={`text-[10px] mt-1 ${appSettings.darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                          {appSettings.connectionMethod === 'protocol' 
-                            ? 'Requer um "RDP Protocol Handler" instalado no Windows.' 
-                            : 'Gera um arquivo temporário para cada conexão.'}
-                        </p>
+                        <div className={`mt-2 p-3 rounded-lg text-[10px] leading-relaxed border ${appSettings.darkMode ? 'bg-blue-900/10 border-blue-800/50 text-blue-300' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
+                          {appSettings.connectionMethod === 'ms-rd' && (
+                            <div className="space-y-1">
+                              <p className="font-bold">Como funciona o Modo Instantâneo:</p>
+                              <p>• Não baixa arquivos. Abre o app de RDP do Windows direto.</p>
+                              <p>• Requer o app "Área de Trabalho Remota" da Microsoft Store (Gratuito).</p>
+                            </div>
+                          )}
+                          {appSettings.connectionMethod === 'download' && (
+                            <div className="space-y-1">
+                              <p className="font-bold">Dica para não ver o download:</p>
+                              <p>• No próximo download, clique com o botão direito no arquivo e marque <b>"Sempre abrir arquivos deste tipo"</b>. O Windows passará a abrir sozinho sem salvar na pasta!</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <label className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Perfil de Performance</label>
