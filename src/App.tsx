@@ -1296,9 +1296,20 @@ export default function App() {
                   <Lock size={18} className="absolute left-4 top-3.5 text-gray-500" />
                 </div>
               </div>
+              
+              <div className="flex justify-end">
+                <button 
+                  type="button"
+                  onClick={() => alert('Para recuperar sua senha, entre em contato com o suporte técnico da S.O.S Informática.')}
+                  className="text-[10px] text-gray-500 hover:text-blue-400 transition-colors font-semibold uppercase tracking-wider"
+                >
+                  Esqueceu a senha?
+                </button>
+              </div>
+
               <button 
                 type="submit"
-                className={`w-full ${accent.bg} ${accent.hover} text-white font-bold py-3 rounded-xl transition-all shadow-lg mt-4`}
+                className={`w-full ${accent.bg} ${accent.hover} text-white font-bold py-3 rounded-xl transition-all shadow-lg mt-2`}
               >
                 Entrar no Sistema
               </button>
@@ -1366,7 +1377,11 @@ export default function App() {
 
         <div className={`p-4 border-t ${appSettings.darkMode ? 'border-gray-800' : 'border-white/10'}`}>
           <button 
-            onClick={() => setIsUnlocked(false)}
+            onClick={() => {
+              setIsUnlocked(false);
+              setUsernameInput('');
+              setPasswordInput('');
+            }}
             className="w-full flex items-center px-2 py-2 gap-4 text-gray-400 hover:text-white transition-colors"
           >
             <LogOut size={20} />
