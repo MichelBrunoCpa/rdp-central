@@ -402,6 +402,7 @@ export default function App() {
 
   // Save settings to server
   const saveSettingsToServer = async (newSettings: any) => {
+    if (!settingsLoaded) return; // Prevent saving before we've even loaded
     try {
       await fetch('/api/settings', {
         method: 'PUT',
@@ -445,14 +446,20 @@ export default function App() {
 
   useEffect(() => {
     if (settingsLoaded) {
-      saveSettingsToServer(appSettings);
+      const timeoutId = setTimeout(() => {
+        saveSettingsToServer(appSettings);
+      }, 500); // Debounce saves
+      return () => clearTimeout(timeoutId);
     }
+  }, [appSettings, settingsLoaded]);
+
+  useEffect(() => {
     if (appSettings.darkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [appSettings, settingsLoaded]);
+  }, [appSettings.darkMode]);
 
   useEffect(() => {
     if (settingsLoaded) {
@@ -1421,8 +1428,8 @@ export default function App() {
           <button 
             onClick={() => {
               setIsUnlocked(false);
-              setUsernameInput('');
               setPasswordInput('');
+              // Don't clear username input so it stays visible on the lock screen
             }}
             className="w-full flex items-center px-2 py-2 gap-4 text-gray-400 hover:text-white transition-colors"
           >

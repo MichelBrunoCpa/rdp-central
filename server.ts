@@ -242,7 +242,7 @@ async function startServer() {
     try {
       const data = JSON.stringify(req.body);
       await db.execute({
-        sql: "INSERT OR REPLACE INTO settings (id, data) VALUES (1, ?)",
+        sql: "INSERT INTO settings (id, data) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data",
         args: [data]
       });
       res.json({ success: true });
