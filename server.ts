@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 // Turso / LibSQL Configuration
 // Use TURSO_DATABASE_URL and TURSO_AUTH_TOKEN for remote Turso DB
 // Fallback to local file for development
-const dbUrl = process.env.TURSO_DATABASE_URL || "file:rdp_connections.db";
+const dbUrl = process.env.TURSO_DATABASE_URL || process.env.URL_DO_BANCO_DE_DADOS_TURSO || "file:rdp_connections.db";
 const authToken = process.env.TURSO_AUTH_TOKEN;
 
 const db = createClient({
@@ -23,6 +23,7 @@ const db = createClient({
 
 // Initialize database
 async function initDb() {
+  console.log(`[DB] Initializing database with URL: ${dbUrl.startsWith('file:') ? 'Local SQLite' : 'Remote Turso'}`);
   try {
     await db.execute(`
       CREATE TABLE IF NOT EXISTS connections (
@@ -82,6 +83,13 @@ async function startServer() {
   app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
   // API Routes
+  app.get("/api/debug/db-status", (req, res) => {
+    res.json({ 
+      type: dbUrl.startsWith('file:') ? 'local' : 'remote',
+      url: dbUrl.startsWith('file:') ? 'rdp_connections.db' : dbUrl.split('@')[1] || 'Turso Cloud'
+    });
+  });
+
   app.get("/api/connections", async (req, res) => {
     try {
       const result = await db.execute("SELECT * FROM connections ORDER BY sort_order ASC, group_name ASC, name ASC");

@@ -36,7 +36,9 @@ import {
   Star,
   GripVertical,
   Copy,
-  Check
+  Check,
+  Cloud,
+  Database
 } from 'lucide-react';
 import { 
   DndContext, 
@@ -353,6 +355,7 @@ export default function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [dbStatus, setDbStatus] = useState<{type: string, url: string} | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(() => {
     return sessionStorage.getItem('isUnlocked') === 'true';
   });
@@ -390,6 +393,12 @@ export default function App() {
   // Fetch settings from server
   const fetchSettings = async () => {
     try {
+      const dbRes = await fetch('/api/debug/db-status');
+      if (dbRes.ok) {
+        const status = await dbRes.json();
+        setDbStatus(status);
+      }
+
       const res = await fetch('/api/settings');
       if (res.ok) {
         const data = await res.json();
@@ -2325,7 +2334,16 @@ export default function App() {
                         <h3 className={`font-bold ${appSettings.darkMode ? 'text-white' : 'text-gray-800'}`}>{t('systemStatus')}</h3>
                       </div>
                       <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t('status')}:</span>
+                        <span className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Banco de Dados:</span>
+                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          dbStatus?.type === 'remote' 
+                            ? 'bg-blue-50 text-blue-600' 
+                            : 'bg-amber-50 text-amber-600'
+                        }`}>
+                          {dbStatus?.type === 'remote' ? <Cloud size={10} /> : <Database size={10} />}
+                          {dbStatus?.type === 'remote' ? 'Nuvem (Turso)' : 'Local (SQLite)'}
+                        </div>
+                        <span className={`text-[10px] font-bold uppercase ${appSettings.darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t('status')}:</span>
                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold">
                           <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                           {appSettings.serverStatus}
