@@ -345,6 +345,7 @@ export default function App() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState<Connection | null>(null);
   const [activeTab, setActiveTab] = useState('Painel');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -499,10 +500,11 @@ export default function App() {
       name: '',
       address: '',
       username: appSettings.defaultUser,
-      group_name: 'Geral',
+      group_name: '',
       notes: '',
       favorite: false
     });
+    setIsGroupDropdownOpen(false);
   };
 
   const getAdaptiveFontSize = (text: string) => {
@@ -518,7 +520,7 @@ export default function App() {
     name: '',
     address: '',
     username: '',
-    group_name: 'Geral',
+    group_name: '',
     notes: '',
     favorite: false
   });
@@ -619,7 +621,7 @@ export default function App() {
         host,
         port,
         username: formData.username,
-        group_name: formData.group_name,
+        group_name: formData.group_name || 'Geral',
         notes: formData.notes,
         favorite: formData.favorite ? 1 : 0
       };
@@ -2436,7 +2438,7 @@ export default function App() {
             >
               <div className={`px-6 py-4 border-b flex items-center justify-between ${appSettings.darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
                 <h2 className={`text-lg font-bold ${appSettings.darkMode ? 'text-white' : 'text-gray-800'}`}>{editingConnection ? 'Editar Servidor' : 'Adicionar Novo Servidor'}</h2>
-                <button onClick={() => setIsModalOpen(false)} className={`p-2 rounded-full text-gray-400 transition-colors ${appSettings.darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
+                <button onClick={() => { setIsModalOpen(false); setIsGroupDropdownOpen(false); }} className={`p-2 rounded-full text-gray-400 transition-colors ${appSettings.darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
                   <X size={20} />
                 </button>
               </div>
@@ -2473,14 +2475,69 @@ export default function App() {
                       onChange={(e) => setFormData({...formData, username: e.target.value})}
                     />
                   </div>
-                  <div>
+                  <div className="relative">
                     <label className={`block text-xs font-bold uppercase mb-1 ${appSettings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Grupo</label>
-                    <input 
-                      type="text" 
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
-                      value={formData.group_name}
-                      onChange={(e) => setFormData({...formData, group_name: e.target.value})}
-                    />
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors pr-10 ${appSettings.darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+                        value={formData.group_name}
+                        onChange={(e) => {
+                          setFormData({...formData, group_name: e.target.value});
+                          setIsGroupDropdownOpen(false);
+                        }}
+                        onFocus={(e) => {
+                          e.target.select();
+                          setIsGroupDropdownOpen(true);
+                        }}
+                        placeholder="Geral"
+                      />
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsGroupDropdownOpen(!isGroupDropdownOpen);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-200 transition-colors"
+                      >
+                        <ChevronDown size={16} className={`transition-transform duration-200 ${isGroupDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+
+                    <AnimatePresence>
+                      {isGroupDropdownOpen && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-[70]" 
+                            onClick={() => setIsGroupDropdownOpen(false)} 
+                          />
+                          <motion.div 
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className={`absolute z-[80] w-full mt-1 border rounded-md shadow-xl overflow-hidden max-h-48 overflow-y-auto ${appSettings.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+                          >
+                            {Array.from(new Set(connections.map(c => c.group_name).filter(Boolean))).sort().length > 0 ? (
+                              Array.from(new Set(connections.map(c => c.group_name).filter(Boolean))).sort().map(group => (
+                                <button
+                                  key={group}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({...formData, group_name: group});
+                                    setIsGroupDropdownOpen(false);
+                                  }}
+                                  className={`w-full text-left px-4 py-2 text-sm transition-colors ${appSettings.darkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                                >
+                                  {group}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-4 py-2 text-xs text-gray-500 italic">Nenhum grupo existente</div>
+                            )}
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
                   </div>
                   <div className="col-span-2 flex items-center gap-3 py-2">
                     <button 
@@ -2512,7 +2569,7 @@ export default function App() {
                   <div className="flex gap-3">
                     <button 
                       type="button"
-                      onClick={() => setIsModalOpen(false)}
+                      onClick={() => { setIsModalOpen(false); setIsGroupDropdownOpen(false); }}
                       className={`flex-1 px-4 py-2 border rounded-md font-semibold transition-colors text-sm ${appSettings.darkMode ? 'border-gray-700 text-gray-400 hover:bg-gray-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                     >
                       Cancelar
