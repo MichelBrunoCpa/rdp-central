@@ -351,7 +351,10 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    return sessionStorage.getItem('isUnlocked') === 'true';
+  });
   const [passwordInput, setPasswordInput] = useState('');
   const [usernameInput, setUsernameInput] = useState('');
   const [connectingId, setConnectingId] = useState<number | null>(null);
@@ -462,6 +465,10 @@ export default function App() {
   }, [appSettings.darkMode]);
 
   useEffect(() => {
+    sessionStorage.setItem('isUnlocked', isUnlocked.toString());
+  }, [isUnlocked]);
+
+  useEffect(() => {
     if (settingsLoaded) {
       if (!appSettings.masterPassword) {
         setIsUnlocked(true);
@@ -517,6 +524,7 @@ export default function App() {
   });
 
   useEffect(() => {
+    setIsMounted(true);
     fetchSettings();
     fetchConnections();
     fetchActivities();
@@ -1401,7 +1409,7 @@ export default function App() {
         <nav className="flex-1 py-4">
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`w-full flex items-center px-6 py-3 gap-4 text-gray-400 hover:text-white transition-colors mb-2 ${!sidebarOpen ? 'justify-center' : ''}`}
+            className="w-full flex items-center px-6 py-3 gap-4 text-gray-400 hover:text-white transition-colors mb-2"
             title={sidebarOpen ? "Recolher Menu" : "Expandir Menu"}
           >
             <Menu size={20} />
@@ -1569,15 +1577,17 @@ export default function App() {
                                 </div>
                               </div>
                               <div className="h-[300px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={realChartData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={appSettings.darkMode ? '#1f2937' : '#f0f0f0'} />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
-                                    <Tooltip cursor={{ fill: appSettings.darkMode ? '#111827' : '#f3f4f6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: appSettings.darkMode ? '#1f2937' : '#ffffff', color: appSettings.darkMode ? '#ffffff' : '#000000' }} />
-                                    <Bar dataKey="connections" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
-                                  </BarChart>
-                                </ResponsiveContainer>
+                                {isMounted && (
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={realChartData}>
+                                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={appSettings.darkMode ? '#1f2937' : '#f0f0f0'} />
+                                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+                                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+                                      <Tooltip cursor={{ fill: appSettings.darkMode ? '#111827' : '#f3f4f6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: appSettings.darkMode ? '#1f2937' : '#ffffff', color: appSettings.darkMode ? '#ffffff' : '#000000' }} />
+                                      <Bar dataKey="connections" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
+                                    </BarChart>
+                                  </ResponsiveContainer>
+                                )}
                               </div>
                             </div>
                           </SortableWidget>
@@ -1646,15 +1656,17 @@ export default function App() {
                                 <button onClick={() => setActiveTab('Grupos')} className="text-blue-600 text-xs font-bold hover:underline">Ver tudo</button>
                               </div>
                               <div className="p-6 h-[250px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={groupUsageData} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={appSettings.darkMode ? '#1f2937' : '#f0f0f0'} />
-                                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
-                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} width={100} />
-                                    <Tooltip cursor={{ fill: appSettings.darkMode ? '#111827' : '#f3f4f6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: appSettings.darkMode ? '#1f2937' : '#ffffff', color: appSettings.darkMode ? '#ffffff' : '#000000', fontSize: '10px' }} />
-                                    <Bar dataKey="value" fill="#818cf8" radius={[0, 4, 4, 0]} barSize={20} />
-                                  </BarChart>
-                                </ResponsiveContainer>
+                                {isMounted && (
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={groupUsageData} layout="vertical">
+                                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={appSettings.darkMode ? '#1f2937' : '#f0f0f0'} />
+                                      <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} width={100} />
+                                      <Tooltip cursor={{ fill: appSettings.darkMode ? '#111827' : '#f3f4f6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: appSettings.darkMode ? '#1f2937' : '#ffffff', color: appSettings.darkMode ? '#ffffff' : '#000000', fontSize: '10px' }} />
+                                      <Bar dataKey="value" fill="#818cf8" radius={[0, 4, 4, 0]} barSize={20} />
+                                    </BarChart>
+                                  </ResponsiveContainer>
+                                )}
                               </div>
                             </div>
                           </SortableWidget>
